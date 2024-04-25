@@ -1,5 +1,30 @@
-# Flask-MongoDB Web App
+# Todo App
 
-In this assignment you will create a web app that relies upon a MongoDB database.
+Todo App is a web application which allows its users to manage their tasks. It supports authentication to handle multiple users. It is developed using Python Flask. It uses Mongodb for managing users' data.
 
-Replace the contents of this file with a description of your own web app, as described in [the instructions](./instructions.md).
+## Features
+
+* Create a new Todo
+* Read all Todos
+* Update status of a Todo
+* Delete a Todo
+
+## Todo App UI
+
+**HOME PAGE**
+
+![Home Page](images/home-page.png)
+
+**REGISTER PAGE**
+
+![Register Page](images/register-page.png)
+
+**LOGIN PAGE**
+
+![Register Page](images/login-page.png)
+
+**TODO PAGE**
+
+![Register Page](images/todo-page.png)
+
+
