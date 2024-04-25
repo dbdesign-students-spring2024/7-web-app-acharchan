@@ -1,0 +1,10 @@
+{% extends 'base.html' %} {% block container %}
+      <form action="http://localhost:5000/register" method="post">
+        <input name="username" type="text" placeholder="Enter Username">
+        <input name="password" type="password" placeholder="Enter Password">
+        <button class="button" type="submit">Register</button>
+      </form>
+    </div>
+  </body>
+</html>
+{% endblock %}

@@ -4,10 +4,11 @@ import os
 import sys
 import subprocess
 import datetime
-
 from flask import Flask, render_template, request, redirect, url_for, make_response
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 
-# import logging
+
 import sentry_sdk
 from sentry_sdk.integrations.flask import (
     FlaskIntegration,
@@ -19,13 +20,8 @@ from pymongo.errors import ConnectionFailure
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
 
-# load credentials and configuration options from .env file
-# if you do not yet have a file named .env, make one based on the template in env.example
 load_dotenv(override=True)  # take environment variables from .env.
 
-# initialize Sentry for help debugging... this requires an account on sentrio.io
-# you will need to set the SENTRY_DSN environment variable to the value provided by Sentry
-# delete this if not using sentry.io
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
     # enable_tracing=True,
@@ -33,16 +29,21 @@ sentry_sdk.init(
     traces_sample_rate=1.0,
     # Set profiles_sample_rate to 1.0 to profile 100% of sampled transactions.
     # We recommend adjusting this value in production.
-    profiles_sample_rate=1.0,
+    # profiles_sample_rate=1.0,
     integrations=[FlaskIntegration()],
     send_default_pii=True,
 )
 
 # instantiate the app using sentry for debugging
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY")
+
+# Login Manager
+login_manager = LoginManager()
+login_manager.init_app(app)
 
 # # turn on debugging if in development mode
-# app.debug = True if os.getenv("FLASK_ENV", "development") == "development" else False
+app.debug = True if os.getenv("FLASK_ENV", "development") == "development" else False
 
 # try to connect to the database, and quit if it doesn't work
 try:
@@ -60,6 +61,26 @@ except ConnectionFailure as e:
     sys.exit(1)  # this is a catastrophic error, so no reason to continue to live
 
 
+# User
+class User(UserMixin):
+    def __init__(self, user_id, username):
+        self.user_id = user_id
+        self.username = username
+
+    @staticmethod
+    def get(user_id):
+        user = db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return None
+        return User(user_id, user['username'])
+
+    def get_id(self):
+        return str(self.user_id)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
+
 # set up the routes
 
 
@@ -69,124 +90,129 @@ def home():
     Route for the home page.
     Simply returns to the browser the content of the index.html file located in the templates folder.
     """
+    if current_user.is_authenticated:
+        return redirect(url_for('todos'))
+    
     return render_template("index.html")
 
-
-@app.route("/read")
-def read():
+@app.route("/login", methods=['POST', 'GET'])
+def login():
     """
-    Route for GET requests to the read page.
-    Displays some information for the user with links to other pages.
+    Route for the login page.
+    Simply returns to the browser the content of the login.html file located in the templates folder.
     """
-    docs = db.exampleapp.find({}).sort(
-        "created_at", -1
-    )  # sort in descending order of created_at timestamp
-    return render_template("read.html", docs=docs)  # render the read template
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = db.users.find_one({'username': username})
+        if user and check_password_hash(user['password'], password):
+            user = User(user["_id"], username)
+            login_user(user)
 
+            return redirect(url_for('todos'))
+        else:
+            return render_template('login.html', error='Invalid username or password')
+        
+    if current_user.is_authenticated:
+        return redirect(url_for('todos'))
+    
+    return render_template("login.html")
 
-@app.route("/create")
-def create():
+@app.route("/register", methods=['POST', 'GET'])
+def register():
     """
-    Route for GET requests to the create page.
-    Displays a form users can fill out to create a new document.
+    Route for the register page.
+    Simply returns to the browser the content of the register.html file located in the templates folder.
     """
-    return render_template("create.html")  # render the create template
+    if request.method == 'POST':
+        username = request.form['username']
+        existing_user = db.users.find_one({'username': username})
+        if existing_user:
+            return render_template('register.html', error='Username already exists')
+        password = generate_password_hash(request.form['password'])
+        db.users.insert_one({'username': username, 'password': password})
+        return redirect(url_for('login'))
+    
+    if current_user.is_authenticated:
+        return redirect(url_for('todos'))
 
+    return render_template("register.html")
 
-@app.route("/create", methods=["POST"])
-def create_post():
+@app.route("/logout")
+@login_required
+def logout():
     """
-    Route for POST requests to the create page.
-    Accepts the form submission data for a new document and saves the document to the database.
+    Route for the logout.
     """
-    name = request.form["fname"]
-    message = request.form["fmessage"]
+    logout_user()
 
-    # create a new document with the data the user entered
-    doc = {"name": name, "message": message, "created_at": datetime.datetime.utcnow()}
-    db.exampleapp.insert_one(doc)  # insert a new document
-
-    return redirect(
-        url_for("read")
-    )  # tell the browser to make a request for the /read route
+    return redirect(url_for('home'))
 
 
-@app.route("/edit/<mongoid>")
-def edit(mongoid):
+@app.route("/todos")
+# @login_required
+def todos():
     """
-    Route for GET requests to the edit page.
-    Displays a form users can fill out to edit an existing record.
+    Route for GET requests to the todos page.
+    """
+    print("Todos:",current_user.username)
+
+    todo_objs = db.todoapp.find({"username": current_user.username})
+
+    return render_template("todos.html", todos=todo_objs) 
+
+@app.route("/create_todo", methods=["POST"])
+@login_required
+def create_todo():
+    """
+    Route for POST requests to the create todo.
+    Accepts the form submission data for a new tod and saves the todo to the database.
+    """
+    todo = request.form["todo"]
+    date = request.form["date"]
+
+    
+    # create a new todo with the data the user entered
+    todo_obj = {"username": current_user.username, "todo": todo, "date":date, "status": "incomplete"}
+
+    db.todoapp.insert_one(todo_obj)  # insert a new todo
+
+    return redirect(url_for('todos'))
+
+@app.route("/update_todo_status/<mongoid>")
+@login_required
+def update_todo_status(mongoid):
+    """
+    Route for POST requests to the update todo status.
+    Accepts the form submission data for the specified todo and updates the status of todo in the database.
 
     Parameters:
     mongoid (str): The MongoDB ObjectId of the record to be edited.
     """
-    doc = db.exampleapp.find_one({"_id": ObjectId(mongoid)})
-    return render_template(
-        "edit.html", mongoid=mongoid, doc=doc
-    )  # render the edit template
 
-
-@app.route("/edit/<mongoid>", methods=["POST"])
-def edit_post(mongoid):
-    """
-    Route for POST requests to the edit page.
-    Accepts the form submission data for the specified document and updates the document in the database.
-
-    Parameters:
-    mongoid (str): The MongoDB ObjectId of the record to be edited.
-    """
-    name = request.form["fname"]
-    message = request.form["fmessage"]
-
-    doc = {
-        # "_id": ObjectId(mongoid),
-        "name": name,
-        "message": message,
-        "created_at": datetime.datetime.utcnow(),
+    todo_obj = {
+        "status": "complete"
     }
 
-    db.exampleapp.update_one(
-        {"_id": ObjectId(mongoid)}, {"$set": doc}  # match criteria
+    db.todoapp.update_one(
+        {"_id": ObjectId(mongoid)}, {"$set": todo_obj} 
     )
 
-    return redirect(
-        url_for("read")
-    )  # tell the browser to make a request for the /read route
+    return redirect(url_for('todos'))
 
-
-@app.route("/delete/<mongoid>")
+@app.route("/delete_todo/<mongoid>")
+@login_required
 def delete(mongoid):
     """
-    Route for GET requests to the delete page.
-    Deletes the specified record from the database, and then redirects the browser to the read page.
+    Route for GET requests to the delete todo.
+    Deletes the specified todo from the database, and then redirects the browser to the todo page.
 
     Parameters:
-    mongoid (str): The MongoDB ObjectId of the record to be deleted.
+    mongoid (str): The MongoDB ObjectId of the todo to be deleted.
     """
-    db.exampleapp.delete_one({"_id": ObjectId(mongoid)})
-    return redirect(
-        url_for("read")
-    )  # tell the web browser to make a request for the /read route.
+    db.todoapp.delete_one({"_id": ObjectId(mongoid)})
 
-
-@app.route("/webhook", methods=["POST"])
-def webhook():
-    """
-    GitHub can be configured such that each time a push is made to a repository, GitHub will make a request to a particular web URL... this is called a webhook.
-    This function is set up such that if the /webhook route is requested, Python will execute a git pull command from the command line to update this app's codebase.
-    You will need to configure your own repository to have a webhook that requests this route in GitHub's settings.
-    Note that this webhook does do any verification that the request is coming from GitHub... this should be added in a production environment.
-    """
-    # run a git pull command
-    process = subprocess.Popen(["git", "pull"], stdout=subprocess.PIPE)
-    pull_output = process.communicate()[0]
-    # pull_output = str(pull_output).strip() # remove whitespace
-    process = subprocess.Popen(["chmod", "a+x", "flask.cgi"], stdout=subprocess.PIPE)
-    chmod_output = process.communicate()[0]
-    # send a success response
-    response = make_response(f"output: {pull_output}", 200)
-    response.mimetype = "text/plain"
-    return response
+    return redirect(url_for('todos'))
 
 
 @app.errorhandler(Exception)
@@ -200,4 +226,5 @@ def handle_error(e):
 # run the app
 if __name__ == "__main__":
     # logging.basicConfig(filename="./flask_error.log", level=logging.DEBUG)
-    app.run(load_dotenv=True)
+    # app.run(load_dotenv=True)
+    app.run(debug=True)

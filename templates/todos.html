@@ -1,0 +1,55 @@
+{% extends 'base.html' %} {% block container %}
+      <!-- LOGOUT -->
+      <div style="display: flex;justify-content: end;margin-right: 20px;">
+        <a class="button" href="/logout">LOGOUT</a>
+      </div>
+      <!-- LOGOUT -->
+      <!-- INSERT NEW TODO -->
+      <form class="add-todo-form">
+        <input type="text" id="todo-input" placeholder="Enter TODO"/>
+        <button class="button" onclick="add_todo()">ADD</button>
+      </form>
+      <!-- INSERT NEW TODO -->
+
+      <!-- SHOW ALL TODOS -->
+      <table id="todo-table">
+        <tr class="todo-row">
+
+            {% for obj in todos %}
+
+            <td>
+                <div class="todo">
+                    <div class="todo-header">
+                            
+                            <div class="date">{{ obj.date }}</div>
+                            
+                            
+                            <div class="done" onclick="window.location.href = 'http://localhost:5000/update_todo_status/{{obj._id}}';" {% if obj.status == 'complete' %}style="visibility: hidden;"{% endif %}>
+                                <i class="fas fa-check"></i>
+                            </div>
+                            
+                            
+                            <div class="delete" onclick="window.location.href = 'http://localhost:5000/delete_todo/{{obj._id}}';">
+                                <i class="fas fa-trash"></i>
+                            </div>
+
+                    </div>
+        
+
+                    <div class="title">
+                        {% if obj.status == 'complete' %}
+                            <s>{{ obj.todo }}</s>
+                        {% else %}
+                            {{ obj.todo }}
+                        {% endif %}
+                    </div>
+
+                </div>
+            </td>
+
+            {% endfor %}
+
+        </tr>
+      </table>
+      <!-- SHOW ALL TODOS -->
+{% endblock %}

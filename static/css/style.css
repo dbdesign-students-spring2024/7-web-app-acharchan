@@ -1,25 +1,135 @@
-.container {
-  border: 2px solid;
-  width: 50%;
-  margin: 0 auto;
+body{
+  margin: 0;
+  padding: 0;
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  background-color: #074173;
+  color: #5DEBD7;
 }
 
-header,
-footer,
-main {
-  padding: 20px;
+.header{
+  text-align: center;
+  font-size: 3em;
 }
 
-header,
-main {
-  border-bottom: 2px solid;
-  margin-bottom: 5px;
+.button{
+  text-align: center;
+  background-color: #1679AB;
+  color: #5DEBD7;
+  padding: 10px;
+  border: none;
+  font-weight: bold;
+  text-decoration: none;
+  border-radius: 5px;
+  text-transform: uppercase;
 }
 
-p.post {
-  font-size: 12px;
+.button:hover{
+  cursor: pointer;
+  background-color: #2ea7e3;
 }
 
-footer {
-  margin-bottom: 5px;
+.auth-buttons{
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+input{
+  background-color: #1679AB;
+  border: none;
+  color: #5DEBD7;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+input::placeholder{
+  color: #5DEBD7;
+}
+
+form{
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+.add-todo-form{
+  display: flex;
+}
+
+#todo-table{
+  text-align: center;
+  width: 70%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.todo-row td{
+  display: flex;
+  font-weight: normal;
+  margin: 10px 0px 0px 0px;
+  
+}
+
+.todo{
+  display: flex;
+  flex-direction: column;
+  border: 2px solid #1679AB;
+  
+  border-radius: 5px;
+  padding: 5px;
+  width: 100%;
+}
+
+.todo .title{
+  font-size: medium;
+  text-align: left;
+  padding: 5px;
+  word-wrap: break-word;
+  overflow: auto;  
+}
+
+.todo-header{
+  display: grid;
+  grid-template-columns: 3fr 0.25fr 0.25fr;
+  
+}
+
+.todo-header div{
+  padding: 7px;
+  margin: 0px 0px 0px 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.todo-header .date{
+  font-size: medium;
+  margin-top: auto;
+}
+
+.todo-header .done{
+  border: 2px solid #1679AB;
+  border-radius: 5px;
+}
+
+.todo-header .delete{
+  border: 2px solid #1679AB;
+  border-radius: 5px;
+  
+}
+
+.todo-header .done:hover{
+  border: 2px solid #2ea7e3;
+  background-color: #5DEBD7;
+  color: #2ea7e3;
+  cursor: pointer;
+}
+
+.todo-header .delete:hover{
+  border: 2px solid #2ea7e3;
+  background-color: #5DEBD7;
+  color: #2ea7e3;
+  cursor: pointer;
 }

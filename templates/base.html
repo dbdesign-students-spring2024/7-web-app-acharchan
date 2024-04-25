@@ -1,31 +1,17 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Flask-MongoDB Example App</title>
+    <title>Todo App</title>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
     />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.css" integrity="sha256-46qynGAkLSFpVbEBog43gvNhfrOj+BmwXdxFgVK/Kvc=" crossorigin="anonymous" /> 
+    <script src="{{ url_for('static', filename='script/script.js') }}"></script>
   </head>
   <body>
-    <div class="container">
-      <header>
-        <h1>Flask-MongoDB Example App</h1>
-        <p>
-          <a href="{{ url_for('home')}}">Home</a> |
-          <a href="{{ url_for('read')}}">All posts</a> |
-          <a href="{{ url_for('create')}}">Create a post</a>
-        </p>
-      </header>
-      <main>{% block container %} {% endblock %}</main>
-      <footer>
-        <p>
-          The source code for this example app is
-          <a href="https://github.com/nyu-database-design/flask-mongodb-web-app"
-            >available on Github</a
-          >.
-        </p>
-      </footer>
+      <h1 class="header">Todo App</h1>
+      {% block container %} {% endblock %}
     </div>
   </body>
 </html>
